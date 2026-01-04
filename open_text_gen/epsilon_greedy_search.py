@@ -19,7 +19,7 @@ source_name = input_file.split("/")[0]
 all_k = [4, 6, 8, 10]
 all_alpha = [0.5, 0.6, 0.7, 0.8]
 alpha = all_alpha[3]
-k = all_k[3]
+k = all_k[2]
 max_len = 128
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
@@ -78,7 +78,7 @@ for data in tqdm(all_data):
             "generated_result": {"0": response},
             "prompt": prompt,
             "gen_text": prompt + response,
-            "gold_ref": data.get("gold_ref", ""),
+            "reference_text": data.get("gold_ref", ""),
         }
     )
 
