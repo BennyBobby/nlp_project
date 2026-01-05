@@ -18,38 +18,78 @@ input_file = "wikitext/wikitext_greedy_gpt2-xl_256.jsonl"
 source_name = input_file.split("/")[0]
 all_k = [4, 6, 8, 10]
 all_alpha = [0.5, 0.6, 0.7, 0.8]
-alpha = all_alpha[3]
-k = all_k[2]
+alpha = all_alpha[0]
+k = all_k[0]
 max_len = 128
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
 
 
+# def eps_greedy_search_algorithm(model, tokenizer, prompt, alpha, k, max_len):
+#     tokenized_prompt = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
+#     prompt_response = tokenized_prompt
+#     is_ended = False
+#     for _ in range(max_len):
+#         with torch.no_grad():
+#             logits = model(prompt_response).logits
+#             next_token_logits = logits[:, -1, :]
+#         if rd.random() < alpha:  # partie exploitation
+#             next_token = torch.argmax(next_token_logits, dim=-1).unsqueeze(-1)
+#         else:  # partie exploration
+#             _, top_k_indices = torch.topk(next_token_logits, k)
+#             random_indice = rd.randint(0, k - 1)
+#             next_token = top_k_indices[:, random_indice].unsqueeze(-1)
+#         prompt_response = torch.cat((prompt_response, next_token), dim=-1)
+#         if (
+#             next_token.item() == tokenizer.eos_token_id
+#         ):  # eos_token_id est le token de fin, si le token est celui de fin alors la boucle prend fin
+#             is_ended = True
+#             break
+#     tokenized_response = prompt_response[0][len(tokenized_prompt[0]) :]
+#     return (
+#         tokenizer.decode(tokenized_response, skip_special_tokens=True),
+#         is_ended,
+#     )
 def eps_greedy_search_algorithm(model, tokenizer, prompt, alpha, k, max_len):
-    tokenized_prompt = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
-    prompt_response = tokenized_prompt
+    input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
+    current_sequence = input_ids
+    past_key_values = None  # Initialisation du KV-Cache
     is_ended = False
-    for _ in range(max_len):
+    generated_tokens = []
+
+    for i in range(max_len):
         with torch.no_grad():
-            logits = model(tokenized_prompt).logits
+
+            if past_key_values is None:
+                outputs = model(current_sequence, use_cache=True)
+            else:
+                outputs = model(
+                    current_sequence[:, -1:],
+                    past_key_values=past_key_values,
+                    use_cache=True,
+                )
+            logits = outputs.logits
+            past_key_values = outputs.past_key_values  # Mise à jour du cache
             next_token_logits = logits[:, -1, :]
-        if rd.random() < alpha:  # partie exploitation
+
+        if rd.random() < alpha:
+            # Exploitation
             next_token = torch.argmax(next_token_logits, dim=-1).unsqueeze(-1)
-        else:  # partie exploration
-            _, top_k_indices = torch.topk(next_token_logits, k)
+        else:
+            # Exploration
+            values, indices = torch.topk(next_token_logits, k)
             random_indice = rd.randint(0, k - 1)
-            next_token = top_k_indices[:, random_indice].unsqueeze(-1)
-        prompt_response = torch.cat((prompt_response, next_token), dim=-1)
-        if (
-            next_token.item() == tokenizer.eos_token_id
-        ):  # eos_token_id est le token de fin, si le token est celui de fin alors la boucle prend fin
+            next_token = indices[:, random_indice].unsqueeze(-1)
+        current_sequence = torch.cat((current_sequence, next_token), dim=-1)
+        generated_tokens.append(next_token.item())
+
+        if next_token.item() == tokenizer.eos_token_id:
             is_ended = True
             break
-    tokenized_response = prompt_response[0][len(tokenized_prompt[0]) :]
-    return (
-        tokenizer.decode(tokenized_response, skip_special_tokens=True),
-        is_ended,
-    )
+
+    response_text = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+
+    return response_text, is_ended
 
 
 all_data = []
@@ -82,6 +122,6 @@ for data in tqdm(all_data):
         }
     )
 
-output_filename = f"{source_name}_eps_{alpha}_k_{k}.json"
+output_filename = f"gpt2_{source_name}_eps_{alpha}_k_{k}.json"
 with open(output_filename, "w", encoding="utf-8") as f:
     json.dump(results, f)
