@@ -15,7 +15,7 @@ python compute_coherence.py --opt_model_name facebook/opt-2.7b --test_path wikin
 dans chaque json, on a changé gold_ref par reference_text (ctrl F) pour que measure_diversity_mauve_gen_length.py se lance
 
 ==========================================================================
-$files = Get-ChildItem -Filter "gpt2_*.json"
+$files = Get-ChildItem -Filter "gpt-neo-125m_*.json"
 
 foreach ($f in $files) {
     Write-Host "--- Évaluation de : $($f.Name) ---" -ForegroundColor Cyan
@@ -23,7 +23,7 @@ foreach ($f in $files) {
 }
 
 =============================================================================
-$files = Get-ChildItem -Filter "gpt2_*.json" | Where-Object { $_.Name -notlike "*_result.json" }
+$files = Get-ChildItem -Filter "gpt-neo-125m_*.json" | Where-Object { $_.Name -notlike "*_result.json" }
 
 foreach ($f in $files) {
     Write-Host "--- Calcul de la cohérence pour : $($f.Name) ---" -ForegroundColor Magenta

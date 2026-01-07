@@ -13,8 +13,8 @@ if device.type == "cuda":
 elif device.type == "cpu":
     print("Utilisation du processeur (CPU)")
 
-model_name = "gpt2"
-input_file = "book/book_greedy_gpt2-xl_256.jsonl"
+model_name = "EleutherAI/gpt-neo-125M"
+input_file = "wikitext/wikitext_greedy_gpt2-xl_256.jsonl"
 source_name = input_file.split("/")[0]
 all_k = [4, 6, 8, 10]
 all_alpha = [0.5, 0.6, 0.7, 0.8]
@@ -155,7 +155,7 @@ for alpha in all_alpha:
                 }
             )
 
-        output_filename = f"gpt2_{source_name}_eps_{alpha}_k_{k}.json"
+        output_filename = f"gpt-neo-125M_{source_name}_eps_{alpha}_k_{k}.json"
         with open(output_filename, "w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False)
         print(f"Fichier sauvegardé : {output_filename}")

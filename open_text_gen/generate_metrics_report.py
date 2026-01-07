@@ -5,11 +5,11 @@ import re
 
 
 def aggregate_results():
-    results_folder = "./results"
+    results_folder = "./"
     aggregated_data = []
 
     pattern = re.compile(
-        r"gpt2_(?P<dataset>book|wikinews|wikitext)_eps_(?P<alpha>[\d\.]+)_k_(?P<k>\d+)"
+        r"gpt-neo-125m_(?P<dataset>book|wikinews|wikitext)_eps_(?P<alpha>[\d\.]+)_k_(?P<k>\d+)"
     )
     files = [
         f
@@ -27,7 +27,7 @@ def aggregate_results():
         k = match.group("k")
         row = {
             "Stratégie": "Epsilon Greedy",
-            "Modèle": "GPT2",
+            "Modèle": "gpt-neo-125m",
             "Dataset": dataset,
             "Alpha": alpha,
             "K": k,
@@ -76,7 +76,7 @@ def aggregate_results():
         "Diversité",
         "Gen Len",
     ]
-    output_file = "bilan_global_resultats.csv"
+    output_file = "bilan_global_resultats_gpt-neo-125m.csv"
 
     with open(output_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=headers)
