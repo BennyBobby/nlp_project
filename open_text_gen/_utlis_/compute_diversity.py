@@ -5,7 +5,7 @@ import numpy as np
 
 
 def load_result(in_f):
-    with open(in_f) as f:
+    with open(in_f, "r", encoding="utf-8") as f:
         result_list = json.load(f)
 
     # load reference list

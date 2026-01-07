@@ -14,12 +14,14 @@ elif device.type == "cpu":
     print("Utilisation du processeur (CPU)")
 
 model_name = "gpt2"
-input_file = "wikitext/wikitext_greedy_gpt2-xl_256.jsonl"
+input_file = "book/book_greedy_gpt2-xl_256.jsonl"
 source_name = input_file.split("/")[0]
 all_k = [4, 6, 8, 10]
 all_alpha = [0.5, 0.6, 0.7, 0.8]
-alpha = all_alpha[0]
-k = all_k[0]
+
+k = all_k[2]
+alpha = all_alpha[3]
+
 max_len = 128
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
@@ -99,29 +101,61 @@ with open(input_file, "r", encoding="utf-8") as f:
             all_data.append(json.loads(line.strip().strip("[] ,")))
         except:
             continue
-print(f"{len(all_data)} préfixes")
+print(f"{len(all_data)} préfixes au total")
+all_data = all_data[:100]
+print(f"Nous prenons que les {len(all_data)} premiers préfixes")
+# results = []
+# for data in tqdm(all_data):
+#     prompt = data.get("prompt")
+#     if not prompt:
+#         continue
+#     (response, is_ended) = eps_greedy_search_algorithm(
+#         model, tokenizer, prompt, alpha, k, max_len
+#     )
+#     full_text = prompt + response
+#     results.append(
+#         {
+#             "ended": is_ended,
+#             "tokens": tokenizer.encode(prompt + response),
+#             "prefix_text": prompt,
+#             "generated_result": {"0": response},
+#             "prompt": prompt,
+#             "gen_text": prompt + response,
+#             "reference_text": data.get("gold_ref", ""),
+#         }
+#     )
 
-results = []
-for data in tqdm(all_data):
-    prompt = data.get("prompt")
-    if not prompt:
-        continue
-    (response, is_ended) = eps_greedy_search_algorithm(
-        model, tokenizer, prompt, alpha, k, max_len
-    )
-    full_text = prompt + response
-    results.append(
-        {
-            "ended": is_ended,
-            "tokens": tokenizer.encode(prompt + response),
-            "prefix_text": prompt,
-            "generated_result": {"0": response},
-            "prompt": prompt,
-            "gen_text": prompt + response,
-            "reference_text": data.get("gold_ref", ""),
-        }
-    )
+# output_filename = f"gpt2_{source_name}_eps_{alpha}_k_{k}.json"
+# with open(output_filename, "w", encoding="utf-8") as f:
+#     json.dump(results, f)
 
-output_filename = f"gpt2_{source_name}_eps_{alpha}_k_{k}.json"
-with open(output_filename, "w", encoding="utf-8") as f:
-    json.dump(results, f)
+for alpha in all_alpha:
+    for k in all_k:
+        print(f"\n--- Lancement : Alpha={alpha}, K={k} ---")
+        results = []
+
+        for data in tqdm(all_data, desc=f"Alpha {alpha} | K {k}"):
+            prompt = data.get("prompt")
+            if not prompt:
+                continue
+
+            response, is_ended = eps_greedy_search_algorithm(
+                model, tokenizer, prompt, alpha, k, max_len
+            )
+
+            results.append(
+                {
+                    "ended": is_ended,
+                    "tokens": tokenizer.encode(prompt + response),
+                    "prefix_text": prompt,
+                    "generated_result": {"0": response},
+                    "prompt": prompt,
+                    "gen_text": prompt + response,
+                    "reference_text": data.get("gold_ref", ""),
+                }
+            )
+
+        output_filename = f"gpt2_{source_name}_eps_{alpha}_k_{k}.json"
+        with open(output_filename, "w", encoding="utf-8") as f:
+            json.dump(results, f, ensure_ascii=False)
+        print(f"Fichier sauvegardé : {output_filename}")
